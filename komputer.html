@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP ADDRESS BATTLE: Dynamic vs Static</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Arial', sans-serif; }
+  
+  :root {
+    --bg-dark: #0a0e27;
+    --bg-mid: #151a3a;
+    --cyan: #00e5ff;
+    --cyan-glow: #00e5ff88;
+    --purple: #a855f7;
+    --purple-glow: #a855f788;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #fbbf24;
+    --text: #e0e7ff;
+    --text-dim: #94a3b8;
+  }
+  
+  body {
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1040 50%, #0a0e27 100%);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  
+  /* Animated background */
+  .bg-grid {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+      linear-gradient(rgba(0,229,255,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.08) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: 0;
+    animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 50px 50px; }
+  }
+  
+  /* Floating data packets */
+  .packet {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+    pointer-events: none;
+    z-index: 1;
+    animation: floatPacket linear infinite;
+  }
+  @keyframes floatPacket {
+    0% { transform: translateX(-100px) translateY(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateX(100vw) translateY(-50px); opacity: 0; }
+  }
+  
+  .container {
+    position: relative;
+    z-index: 10;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  
+  .screen { display: none; animation: fadeIn 0.5s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* TITLE */
+  .title {
+    text-align: center;
+    margin: 30px 0 20px;
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--cyan));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+    text-shadow: 0 0 40px var(--cyan-glow);
+  }
+  @keyframes shine {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  
+  .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    margin-bottom: 30px;
+    font-size: 1rem;
+    letter-spacing: 1px;
+  }
+  
+  /* CARDS */
+  .card {
+    background: rgba(21, 26, 58, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  
+  /* INPUT */
+  .input-group { margin-bottom: 15px; }
+  .input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--cyan);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(10, 14, 39, 0.8);
+    border: 2px solid rgba(0, 229, 255, 0.3);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    transition: all 0.3s;
+  }
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--cyan);
+    box-shadow: 0 0 15px var(--cyan-glow);
+  }
+  
+  /* BUTTONS */
+  .btn {
+    padding: 14px 30px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    color: white;
+    box-shadow: 0 4px 20px var(--cyan-glow);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px var(--cyan-glow);
+  }
+  .btn-secondary {
+    background: rgba(168, 85, 247, 0.2);
+    color: var(--purple);
+    border: 2px solid var(--purple);
+  }
+  .btn-secondary:hover {
+    background: rgba(168, 85, 247, 0.3);
+    transform: translateY(-2px);
+  }
+  .btn-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--red);
+    border: 2px solid var(--red);
+  }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  /* START SCREEN */
+  .start-hero {
+    text-align: center;
+    padding: 20px;
+  }
+  .start-hero .icon-big {
+    font-size: 5rem;
+    margin-bottom: 10px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  .rules-list {
+    text-align: left;
+    margin: 20px 0;
+    line-height: 1.8;
+  }
+  .rules-list li {
+    list-style: none;
+    padding: 8px 0 8px 30px;
+    position: relative;
+  }
+  .rules-list li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--cyan);
+    font-weight: bold;
+  }
+  
+  /* GAME SCREEN */
+  .game-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  .stat-box {
+    background: rgba(10, 14, 39, 0.8);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .stat-value {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--cyan);
+    margin-top: 3px;
+  }
+  .stat-value.combo { color: var(--yellow); }
+  .stat-value.level { color: var(--purple); }
+  
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 8px;
+    background: rgba(10, 14, 39, 0.8);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    transition: width 0.4s ease;
+    box-shadow: 0 0 10px var(--cyan);
+  }
+  
+  /* TIMER */
+  .timer-bar {
+    height: 10px;
+    background: rgba(10, 14, 39, 0.8);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+  }
+  .timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+    transition: width 0.1s linear;
+    box-shadow: 0 0 15px var(--cyan);
+  }
+  .timer-text {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  
+  /* QUESTION */
+  .question-card {
+    background: linear-gradient(135deg, rgba(21, 26, 58, 0.9), rgba(40, 20, 80, 0.7));
+    border: 2px solid rgba(168, 85, 247, 0.4);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.2);
+  }
+  .question-level {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(168, 85, 247, 0.2);
+    color: var(--purple);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    border: 1px solid var(--purple);
+  }
+  .question-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text);
+    font-weight: 500;
+  }
+  
+  /* OPTIONS */
+  .options {
+    display: grid;
+    gap: 12px;
+  }
+  .option {
+    background: rgba(10, 14, 39, 0.8);
+    border: 2px solid rgba(0, 229, 255, 0.3);
+    border-radius: 12px;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1rem;
+    color: var(--text);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .option:hover:not(:disabled) {
+    border-color: var(--cyan);
+    background: rgba(0, 229, 255, 0.1);
+    transform: translateX(5px);
+    box-shadow: 0 0 20px var(--cyan-glow);
+  }
+  .option .letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    color: white;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .option.correct {
+    border-color: var(--green);
+    background: rgba(34, 197, 94, 0.2);
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+    animation: correctFlash 0.6s ease;
+  }
+  .option.correct .letter { background: var(--green); }
+  .option.wrong {
+    border-color: var(--red);
+    background: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    animation: wrongShake 0.5s ease;
+  }
+  .option.wrong .letter { background: var(--red); }
+  .option:disabled { cursor: not-allowed; }
+  
+  @keyframes correctFlash {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+  @keyframes wrongShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+  
+  /* FEEDBACK */
+  .feedback {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 12px;
+    display: none;
+    animation: slideUp 0.4s ease;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct {
+    background: rgba(34, 197, 94, 0.15);
+    border: 2px solid var(--green);
+  }
+  .feedback.wrong {
+    background: rgba(239, 68, 68, 0.15);
+    border: 2px solid var(--red);
+  }
+  .feedback.timeout {
+    background: rgba(251, 191, 36, 0.15);
+    border: 2px solid var(--yellow);
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .feedback-title {
+    font-size: 1.2rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .feedback.correct .feedback-title { color: var(--green); }
+  .feedback.wrong .feedback-title { color: var(--red); }
+  .feedback.timeout .feedback-title { color: var(--yellow); }
+  .feedback-text { line-height: 1.6; color: var(--text); }
+  .feedback-points {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 15px;
+    background: rgba(0, 229, 255, 0.2);
+    border: 1px solid var(--cyan);
+    border-radius: 20px;
+    color: var(--cyan);
+    font-weight: 700;
+  }
+  
+  /* COMBO POPUP */
+  .combo-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--yellow);
+    text-shadow: 0 0 30px var(--yellow), 0 0 60px var(--yellow);
+    pointer-events: none;
+    z-index: 100;
+    transition: all 0.5s;
+  }
+  .combo-popup.show {
+    transform: translate(-50%, -50%) scale(1);
+    animation: comboAnim 1.5s ease forwards;
+  }
+  @keyframes comboAnim {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+    70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  }
+  
+  /* LEVEL UP */
+  .levelup-popup {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(10px);
+  }
+  .levelup-popup.show { display: flex; animation: fadeIn 0.5s; }
+  .levelup-content {
+    text-align: center;
+    padding: 40px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(0, 229, 255, 0.3));
+    border: 2px solid var(--purple);
+    border-radius: 20px;
+    box-shadow: 0 0 60px var(--purple-glow);
+    animation: levelBounce 0.6s ease;
+  }
+  @keyframes levelBounce {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  .levelup-content h2 {
+    font-size: 2.5rem;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+  .levelup-content p { font-size: 1.2rem; margin-bottom: 20px; }
+  
+  /* RESULT SCREEN */
+  .result-hero {
+    text-align: center;
+    padding: 30px 20px;
+  }
+  .result-rank {
+    font-size: 1.5rem;
+    color: var(--yellow);
+    margin: 15px 0;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .result-score {
+    font-size: clamp(3rem, 10vw, 5rem);
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 10px 0;
+    text-shadow: 0 0 50px var(--cyan-glow);
+  }
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin: 25px 0;
+  }
+  .result-stat {
+    background: rgba(10, 14, 39, 0.8);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+  }
+  .result-stat .label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .result-stat .value {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-top: 5px;
+  }
+  .result-stat.correct .value { color: var(--green); }
+  .result-stat.wrong .value { color: var(--red); }
+  .result-stat.accuracy .value { color: var(--cyan); }
+  .result-stat.combo .value { color: var(--yellow); }
+  
+  /* LEADERBOARD */
+  .leaderboard {
+    margin-top: 20px;
+  }
+  .lb-entry {
+    display: grid;
+    grid-template-columns: 50px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 15px;
+    background: rgba(10, 14, 39, 0.6);
+    border-left: 3px solid var(--cyan);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.3s;
+  }
+  .lb-entry:hover {
+    background: rgba(0, 229, 255, 0.1);
+    transform: translateX(5px);
+  }
+  .lb-entry.gold { border-left-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+  .lb-entry.silver { border-left-color: #c0c0c0; }
+  .lb-entry.bronze { border-left-color: #cd7f32; }
+  .lb-rank {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--cyan);
+    text-align: center;
+  }
+  .lb-entry.gold .lb-rank { color: #ffd700; }
+  .lb-entry.silver .lb-rank { color: #c0c0c0; }
+  .lb-entry.bronze .lb-rank { color: #cd7f32; }
+  .lb-info .name { font-weight: 700; }
+  .lb-info .class { font-size: 0.8rem; color: var(--text-dim); }
+  .lb-score {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--cyan);
+  }
+  
+  /* ICONS SVG */
+  .network-icon {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    vertical-align: middle;
+  }
+  
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .container { padding: 10px; }
+    .card { padding: 18px; }
+    .question-card { padding: 18px; }
+    .option { padding: 12px 15px; font-size: 0.95rem; }
+    .option .letter { width: 32px; height: 32px; font-size: 0.9rem; }
+    .stat-value { font-size: 1.1rem; }
+    .btn { padding: 12px 20px; font-size: 0.9rem; }
+  }
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<div class="combo-popup" id="comboPopup">COMBO!</div>
+<div class="levelup-popup" id="levelupPopup">
+  <div class="levelup-content">
+    <h2 id="levelupTitle">LEVEL UP!</h2>
+    <p id="levelupDesc">Kamu naik ke level berikutnya!</p>
+    <button class="btn btn-primary" onclick="closeLevelUp()">LANJUTKAN</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="startScreen">
+    <h1 class="title">⚡ IP ADDRESS BATTLE ⚡</h1>
+    <p class="subtitle">DYNAMIC vs STATIC • NETWORK EDITION</p>
+    
+    <div class="card start-hero">
+      <div class="icon-big">🌐</div>
+      <h2 style="color: var(--cyan); margin-bottom: 10px;">Selamat Datang, Calon Network Engineer!</h2>
+      <p style="color: var(--text-dim);">Uji kemampuanmu tentang IP Address, DHCP, dan konfigurasi jaringan!</p>
+      
+      <div style="margin-top: 25px;">
+        <div class="input-group">
+          <label>👤 Nama Pemain</label>
+          <input type="text" id="playerName" placeholder="Masukkan nama lengkap" maxlength="30">
+        </div>
+        <div class="input-group">
+          <label>🏫 Kelas</label>
+          <input type="text" id="playerClass" placeholder="Contoh: X TKJ 1" maxlength="20">
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startGame()">🚀 MULAI GAME</button>
+        <button class="btn btn-secondary" onclick="showScreen('leaderboardScreen')">🏆 PAPAN PERINGKAT</button>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h3 style="color: var(--purple); margin-bottom: 15px;">📋 ATURAN PERMAINAN</h3>
+      <ul class="rules-list">
+        <li>25 soal pilihan ganda A–E bertahap dari mudah ke sulit</li>
+        <li>Waktu menjawab setiap soal: <strong style="color: var(--cyan);">20 detik</strong></li>
+        <li>Jawaban benar: <strong style="color: var(--green);">+100 poin</strong></li>
+        <li>Bonus kecepatan (maksimal): <strong style="color: var(--yellow);">+50 poin</strong></li>
+        <li>Combo streak (3+ benar berturut-turut): <strong style="color: var(--yellow);">+25 poin per combo</strong></li>
+        <li>3 Level: <strong>Network Beginner → Network Technician → IP Address Master</strong></li>
+      </ul>
+    </div>
+    
+    <div class="card">
+      <h3 style="color: var(--purple); margin-bottom: 15px;">🏅 SISTEM GELAR</h3>
+      <ul class="rules-list">
+        <li><strong style="color: var(--text-dim);">0–499 poin:</strong> Network Rookie</li>
+        <li><strong style="color: var(--cyan);">500–1.499 poin:</strong> Junior Technician</li>
+        <li><strong style="color: var(--purple);">1.500–2.499 poin:</strong> Network Specialist</li>
+        <li><strong style="color: var(--yellow);">2.500+ poin:</strong> IP Address Master ⭐</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="gameScreen">
+    <div class="game-header">
+      <div class="stat-box">
+        <div class="stat-label">Level</div>
+        <div class="stat-value level" id="levelDisplay">1</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Soal</div>
+        <div class="stat-value" id="questionNum">1/25</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Skor</div>
+        <div class="stat-value" id="scoreDisplay">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Combo</div>
+        <div class="stat-value combo" id="comboDisplay">x0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Waktu</div>
+        <div class="stat-value" id="timeDisplay">20</div>
+      </div>
+    </div>
+    
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+    </div>
+    
+    <div class="timer-text">⏱️ Waktu Tersisa</div>
+    <div class="timer-bar">
+      <div class="timer-fill" id="timerFill" style="width: 100%;"></div>
+    </div>
+    
+    <div class="question-card">
+      <span class="question-level" id="questionLevel">LEVEL 1 • NETWORK BEGINNER</span>
+      <p class="question-text" id="questionText">Loading...</p>
+    </div>
+    
+    <div class="options" id="optionsContainer"></div>
+    
+    <div class="feedback" id="feedback">
+      <div class="feedback-title" id="feedbackTitle"></div>
+      <div class="feedback-text" id="feedbackText"></div>
+      <div class="feedback-points" id="feedbackPoints"></div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="resultScreen">
+    <h1 class="title">🏁 GAME SELESAI!</h1>
+    
+    <div class="card result-hero">
+      <div style="font-size: 4rem;">🏆</div>
+      <div class="result-rank" id="resultRank">IP ADDRESS MASTER</div>
+      <div class="result-score" id="resultScore">0</div>
+      <p style="color: var(--text-dim);">Total Poin</p>
+      <p id="resultPlayer" style="margin-top: 15px; color: var(--cyan); font-weight: 700;"></p>
+      
+      <div class="result-stats">
+        <div class="result-stat correct">
+          <div class="label">Benar</div>
+          <div class="value" id="resultCorrect">0</div>
+        </div>
+        <div class="result-stat wrong">
+          <div class="label">Salah</div>
+          <div class="value" id="resultWrong">0</div>
+        </div>
+        <div class="result-stat accuracy">
+          <div class="label">Akurasi</div>
+          <div class="value" id="resultAccuracy">0%</div>
+        </div>
+        <div class="result-stat combo">
+          <div class="label">Max Combo</div>
+          <div class="value" id="resultCombo">0</div>
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startGame()">🔄 MAIN LAGI</button>
+        <button class="btn btn-secondary" onclick="restartSameQuestions()">🔁 ULANGI SOAL</button>
+        <button class="btn btn-danger" onclick="showScreen('startScreen')">🏠 MENU UTAMA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div class="screen" id="leaderboardScreen">
+    <h1 class="title">🏆 PAPAN PERINGKAT</h1>
+    <p class="subtitle">Top 10 Network Engineer Terbaik</p>
+    
+    <div class="card">
+      <div class="leaderboard" id="leaderboardList"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="showScreen('startScreen')">🔙 KEMBALI</button>
+        <button class="btn btn-danger" onclick="clearLeaderboard()">🗑️ HAPUS SEMUA</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ==================== BANK SOAL ==================== */
+const QUESTIONS = [
+  // LEVEL 1 - Network Beginner (1-8)
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "Apa yang dimaksud dengan IP Address dalam jaringan komputer?",
+    options: [
+      "A. Alamat fisik komputer yang tertulis pada motherboard",
+      "B. Alamat logis yang diberikan pada perangkat dalam jaringan untuk identifikasi",
+      "C. Nama domain website seperti google.com",
+      "D. Nomor seri perangkat keras jaringan",
+      "E. Alamat email administrator jaringan"
+    ],
+    answer: 1,
+    explanation: "IP Address adalah alamat logis (biasanya IPv4 seperti 192.168.1.1) yang diberikan ke perangkat dalam jaringan agar dapat saling berkomunikasi."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "Berapa panjang bit alamat IPv4?",
+    options: [
+      "A. 16 bit",
+      "B. 32 bit",
+      "C. 64 bit",
+      "D. 128 bit",
+      "E. 256 bit"
+    ],
+    answer: 1,
+    explanation: "IPv4 memiliki panjang 32 bit yang dibagi menjadi 4 oktet (masing-masing 8 bit), contoh: 192.168.1.1. Sedangkan IPv6 memiliki 128 bit."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "Apa kepanjangan dari DHCP?",
+    options: [
+      "A. Dynamic Host Configuration Protocol",
+      "B. Data Host Connection Protocol",
+      "C. Dynamic Hardware Control Program",
+      "D. Direct Host Communication Protocol",
+      "E. Digital Host Configuration Path"
+    ],
+    answer: 0,
+    explanation: "DHCP (Dynamic Host Configuration Protocol) adalah protokol yang berfungsi memberikan alamat IP secara otomatis kepada komputer klien dalam jaringan."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "IP Address yang diberikan secara otomatis oleh server DHCP disebut...",
+    options: [
+      "A. IP Static",
+      "B. IP Public",
+      "C. IP Dynamic",
+      "D. IP Private",
+      "E. IP Loopback"
+    ],
+    answer: 2,
+    explanation: "IP Dynamic adalah alamat IP yang diberikan secara otomatis oleh server DHCP dan dapat berubah-ubah setiap kali komputer terhubung ke jaringan."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "Manfaat utama penggunaan IP Dynamic adalah...",
+    options: [
+      "A. Alamat IP tetap dan tidak berubah",
+      "B. Memudahkan administrasi karena IP diberikan otomatis oleh DHCP",
+      "C. Cocok untuk server yang butuh alamat tetap",
+      "D. Membutuhkan konfigurasi manual pada setiap komputer",
+      "E. Tidak memerlukan server DHCP"
+    ],
+    answer: 1,
+    explanation: "Keunggulan IP Dynamic adalah administrator tidak perlu mengatur IP satu per satu, sehingga memudahkan pengelolaan jaringan berskala besar."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "IP Static biasanya digunakan untuk perangkat...",
+    options: [
+      "A. Laptop mahasiswa yang sering berpindah",
+      "B. Smartphone pengguna internet",
+      "C. Server, printer jaringan, dan router",
+      "D. Komputer warnet yang bergantian",
+      "E. Tablet siswa di sekolah"
+    ],
+    answer: 2,
+    explanation: "IP Static cocok untuk perangkat yang harus selalu memiliki alamat tetap seperti server, printer jaringan, dan router agar mudah diakses."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "Port default yang digunakan oleh layanan DHCP adalah...",
+    options: [
+      "A. 21 dan 22",
+      "B. 80 dan 443",
+      "C. 67 dan 68",
+      "D. 25 dan 110",
+      "E. 53 dan 123"
+    ],
+    answer: 2,
+    explanation: "DHCP Server menggunakan port 67 dan DHCP Client menggunakan port 68 (UDP) untuk berkomunikasi dalam proses pemberian IP Address."
+  },
+  {
+    level: 1,
+    levelName: "NETWORK BEGINNER",
+    question: "Proses komputer klien meminta IP Address ke server DHCP disebut...",
+    options: [
+      "A. DORA (Discover, Offer, Request, Acknowledge)",
+      "B. ARP (Address Resolution Protocol)",
+      "C. DNS (Domain Name System)",
+      "D. HTTP (HyperText Transfer Protocol)",
+      "E. FTP (File Transfer Protocol)"
+    ],
+    answer: 0,
+    explanation: "Proses DHCP dikenal dengan DORA: Discover (klien mencari server), Offer (server menawarkan IP), Request (klien meminta), Acknowledge (server menyetujui)."
+  },
+  
+  // LEVEL 2 - Network Technician (9-17)
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Subnet mask 255.255.255.0 memiliki prefix CIDR...",
+    options: [
+      "A. /8",
+      "B. /16",
+      "C. /24",
+      "D. /32",
+      "E. /12"
+    ],
+    answer: 2,
+    explanation: "255.255.255.0 = 11111111.11111111.11111111.00000000, jumlah bit '1' ada 24, sehingga notasi CIDR-nya adalah /24."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Default gateway berfungsi untuk...",
+    options: [
+      "A. Memberikan IP Address ke komputer klien",
+      "B. Menghubungkan jaringan lokal dengan jaringan lain/internet",
+      "C. Menerjemahkan nama domain menjadi IP",
+      "D. Menyimpan file bersama dalam jaringan",
+      "E. Mengamankan jaringan dari virus"
+    ],
+    answer: 1,
+    explanation: "Default gateway adalah alamat IP router yang menjadi pintu keluar jaringan lokal untuk berkomunikasi dengan jaringan lain atau internet."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "DHCP Lease Time adalah...",
+    options: [
+      "A. Waktu maksimum komputer menyala",
+      "B. Durasi peminjaman IP Address dari server DHCP kepada klien",
+      "C. Waktu reboot router",
+      "D. Durasi koneksi internet",
+      "E. Waktu pemadaman jaringan"
+    ],
+    answer: 1,
+    explanation: "DHCP Lease Time adalah durasi waktu klien boleh menggunakan IP Address yang diberikan. Setelah habis, klien harus memperbarui (renew) atau mendapat IP baru."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "DHCP Reservation berfungsi untuk...",
+    options: [
+      "A. Menghapus IP Address dari server",
+      "B. Memberikan IP Address tetap kepada perangkat tertentu berdasarkan MAC Address",
+      "C. Mematikan server DHCP sementara",
+      "D. Mengganti subnet mask jaringan",
+      "E. Menambah jumlah klien DHCP"
+    ],
+    answer: 1,
+    explanation: "DHCP Reservation mengikat IP Address tertentu dengan MAC Address perangkat, sehingga perangkat tersebut selalu mendapat IP yang sama meski menggunakan DHCP."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Manakah yang BUKAN merupakan kelas IP Address privat?",
+    options: [
+      "A. 10.0.0.0 – 10.255.255.255",
+      "B. 172.16.0.0 – 172.31.255.255",
+      "C. 192.168.0.0 – 192.168.255.255",
+      "D. 203.10.5.0 – 203.10.5.255",
+      "E. Semua di atas adalah IP privat"
+    ],
+    answer: 3,
+    explanation: "IP privat hanya terdiri dari 3 range: Class A (10.x.x.x), Class B (172.16-31.x.x), Class C (192.168.x.x). Range 203.x.x.x adalah IP publik."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Perintah untuk melihat konfigurasi IP Address pada Windows adalah...",
+    options: [
+      "A. ping",
+      "B. ipconfig",
+      "C. tracert",
+      "D. nslookup",
+      "E. netstat"
+    ],
+    answer: 1,
+    explanation: "Perintah 'ipconfig' (atau 'ipconfig /all' untuk detail lengkap) digunakan untuk melihat konfigurasi IP Address, subnet mask, dan gateway pada Windows."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Alamat IP 127.0.0.1 dikenal sebagai...",
+    options: [
+      "A. Broadcast address",
+      "B. Network address",
+      "C. Loopback address",
+      "D. Multicast address",
+      "E. Default gateway"
+    ],
+    answer: 2,
+    explanation: "127.0.0.1 adalah loopback address (localhost) yang mengarah ke komputer itu sendiri, digunakan untuk pengujian jaringan internal."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Kerugian menggunakan IP Static adalah...",
+    options: [
+      "A. Alamat IP selalu berubah",
+      "B. Membutuhkan konfigurasi manual pada setiap perangkat sehingga rawan kesalahan",
+      "C. Tidak cocok untuk server",
+      "D. Memerlukan server DHCP yang mahal",
+      "E. Komputer tidak bisa terhubung ke internet"
+    ],
+    answer: 1,
+    explanation: "Kelemahan IP Static adalah admin harus mengatur IP satu per satu secara manual, sehingga pada jaringan besar rawan terjadi kesalahan konfigurasi dan konflik IP."
+  },
+  {
+    level: 2,
+    levelName: "NETWORK TECHNICIAN",
+    question: "Jika IP Address komputer 192.168.10.50 dengan subnet mask 255.255.255.0, maka network address-nya adalah...",
+    options: [
+      "A. 192.168.10.0",
+      "B. 192.168.10.1",
+      "C. 192.168.10.255",
+      "D. 192.168.0.0",
+      "E. 192.168.10.50"
+    ],
+    answer: 0,
+    explanation: "Dengan subnet /24 (255.255.255.0), network address didapat dengan meng-nol-kan host, yaitu 192.168.10.0. Broadcast-nya 192.168.10.255."
+  },
+  
+  // LEVEL 3 - IP Address Battle (18-25)
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Sebuah laboratorium komputer memiliki 30 unit PC. Konfigurasi IP yang paling efisien adalah...",
+    options: [
+      "A. Semua PC menggunakan IP Static",
+      "B. Menggunakan DHCP dengan range IP yang cukup (misal /27)",
+      "C. Memberikan IP publik ke setiap PC",
+      "D. Menggunakan subnet mask 255.255.0.0",
+      "E. Tidak perlu IP Address karena menggunakan switch"
+    ],
+    answer: 1,
+    explanation: "Untuk 30 PC klien, DHCP adalah pilihan efisien. Subnet /27 menyediakan 30 host usable (2^5 - 2 = 30) yang pas dengan kebutuhan."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Dua komputer dalam satu jaringan memiliki IP Address yang sama (192.168.1.10). Apa yang akan terjadi?",
+    options: [
+      "A. Kedua komputer bekerja lebih cepat",
+      "B. Terjadi IP Address Conflict, koneksi jaringan salah satu atau keduanya terganggu",
+      "C. IP Address otomatis berubah sendiri",
+      "D. Router akan membagi bandwidth sama rata",
+      "E. Tidak terjadi apa-apa"
+    ],
+    answer: 1,
+    explanation: "IP Conflict terjadi ketika dua perangkat memiliki IP sama dalam satu jaringan, menyebabkan gangguan komunikasi. Solusinya: ubah salah satu IP atau gunakan DHCP."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Server web sekolah harus selalu dapat diakses di alamat yang sama. Jenis IP yang tepat adalah...",
+    options: [
+      "A. IP Dynamic dari DHCP",
+      "B. IP Static yang dikonfigurasi manual",
+      "C. IP Loopback 127.0.0.1",
+      "D. IP Broadcast",
+      "E. IP Multicast"
+    ],
+    answer: 1,
+    explanation: "Server (web, database, email) wajib menggunakan IP Static agar alamatnya tetap dan mudah diakses oleh klien setiap saat."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Printer jaringan di kantor sebaiknya menggunakan...",
+    options: [
+      "A. IP Dynamic agar fleksibel",
+      "B. IP Static atau DHCP Reservation agar alamatnya tetap",
+      "C. IP publik agar bisa diakses dari luar",
+      "D. Tidak perlu IP Address",
+      "E. IP loopback"
+    ],
+    answer: 1,
+    explanation: "Printer jaringan perlu alamat tetap agar semua komputer dapat mencetak tanpa mengubah konfigurasi. Bisa pakai IP Static atau DHCP Reservation."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Sebuah jaringan menggunakan IP 192.168.1.0/24. Jumlah host maksimum yang dapat terhubung adalah...",
+    options: [
+      "A. 256",
+      "B. 254",
+      "C. 255",
+      "D. 128",
+      "E. 512"
+    ],
+    answer: 1,
+    explanation: "/24 memiliki 2^8 = 256 alamat, dikurangi network address (192.168.1.0) dan broadcast (192.168.1.255), sehingga host usable = 254."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Manakah alamat IP yang TIDAK VALID sebagai alamat host?",
+    options: [
+      "A. 192.168.1.1",
+      "B. 10.0.0.5",
+      "C. 172.16.5.255 dengan subnet /16",
+      "D. 192.168.10.100",
+      "E. 10.10.10.10"
+    ],
+    answer: 2,
+    explanation: "172.16.5.255 dengan subnet /16 (255.255.0.0) adalah broadcast address dari network 172.16.0.0/16, sehingga tidak valid sebagai alamat host."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Komputer A (192.168.1.10/24) tidak bisa mengakses internet, padahal gateway 192.168.1.1 aktif. Kemungkinan penyebabnya adalah...",
+    options: [
+      "A. Subnet mask salah diatur",
+      "B. Default gateway di komputer A tidak diset ke 192.168.1.1",
+      "C. IP Address komputer A adalah IP publik",
+      "D. Komputer A menggunakan DHCP",
+      "E. Router tidak memiliki IP Address"
+    ],
+    answer: 1,
+    explanation: "Jika default gateway tidak dikonfigurasi dengan benar (misal kosong atau salah), komputer tidak tahu arah untuk mengirim paket ke jaringan luar/internet."
+  },
+  {
+    level: 3,
+    levelName: "IP ADDRESS BATTLE",
+    question: "Dalam sebuah sekolah, server menggunakan 192.168.10.1, printer 192.168.10.2, gateway 192.168.10.254. Siswa ingin menambahkan PC baru dengan DHCP. Range DHCP yang aman adalah...",
+    options: [
+      "A. 192.168.10.1 – 192.168.10.254",
+      "B. 192.168.10.10 – 192.168.10.200",
+      "C. 192.168.10.255",
+      "D. 192.168.10.0",
+      "E. 10.0.0.1 – 10.0.0.254"
+    ],
+    answer: 1,
+    explanation: "Range DHCP harus menghindari IP yang sudah dipakai statis (server, printer, gateway). Range 192.168.10.10–200 aman karena tidak bentrok dengan IP statis yang sudah ada."
+  }
+];
+
+/* ==================== GAME STATE ==================== */
+let state = {
+  playerName: "",
+  playerClass: "",
+  currentQuestion: 0,
+  score: 0,
+  combo: 0,
+  maxCombo: 0,
+  correctCount: 0,
+  wrongCount: 0,
+  currentLevel: 1,
+  timeLeft: 20,
+  timerInterval: null,
+  questionStartTime: 0,
+  answered: false,
+  questionsOrder: [],
+  sameQuestions: false
+};
+
+/* ==================== AUDIO (Web Audio API) ==================== */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) { return null; }
+  }
+  return audioCtx;
+}
+
+function playSound(type) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    const now = ctx.currentTime;
+    if (type === 'correct') {
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.2, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.2);
+      });
+    } else if (type === 'wrong') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'levelup') {
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.2, now + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i * 0.1);
+        osc.stop(now + i * 0.1 + 0.3);
+      });
+    } else if (type === 'tick') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.05);
+    } else if (type === 'combo') {
+      [783.99, 987.77, 1174.66].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.15);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i * 0.05);
+        osc.stop(now + i * 0.05 + 0.15);
+      });
+    }
+  } catch(e) {}
+}
+
+/* ==================== BACKGROUND PACKETS ==================== */
+function createPackets() {
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'packet';
+    p.style.top = (Math.random() * 100) + '%';
+    p.style.animationDuration = (8 + Math.random() * 10) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    if (Math.random() > 0.5) p.style.background = 'var(--purple)';
+    if (Math.random() > 0.5) p.style.boxShadow = '0 0 10px var(--purple), 0 0 20px var(--purple)';
+    document.body.appendChild(p);
+  }
+}
+createPackets();
+
+/* ==================== SCREEN MANAGEMENT ==================== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'leaderboardScreen') renderLeaderboard();
+  window.scrollTo(0, 0);
+}
+
+/* ==================== GAME START ==================== */
+function startGame() {
+  const name = document.getElementById('playerName').value.trim();
+  const cls = document.getElementById('playerClass').value.trim();
+  if (!name) { alert('Silakan masukkan nama pemain!'); return; }
+  if (!cls) { alert('Silakan masukkan kelas!'); return; }
+  
+  state.playerName = name;
+  state.playerClass = cls;
+  state.currentQuestion = 0;
+  state.score = 0;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  state.currentLevel = 1;
+  state.sameQuestions = false;
+  
+  // Shuffle questions
+  state.questionsOrder = [...Array(QUESTIONS.length).keys()];
+  for (let i = state.questionsOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [state.questionsOrder[i], state.questionsOrder[j]] = [state.questionsOrder[j], state.questionsOrder[i]];
+  }
+  
+  showScreen('gameScreen');
+  loadQuestion();
+}
+
+function restartSameQuestions() {
+  if (!state.questionsOrder.length) { startGame(); return; }
+  state.currentQuestion = 0;
+  state.score = 0;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  state.currentLevel = 1;
+  state.sameQuestions = true;
+  showScreen('gameScreen');
+  loadQuestion();
+}
+
+/* ==================== LOAD QUESTION ==================== */
+function loadQuestion() {
+  if (state.currentQuestion >= QUESTIONS.length) {
+    endGame();
+    return;
+  }
+  
+  const qIdx = state.questionsOrder[state.currentQuestion];
+  const q = QUESTIONS[qIdx];
+  
+  // Check level up
+  const newLevel = q.level;
+  if (newLevel > state.currentLevel && state.currentQuestion > 0) {
+    state.currentLevel = newLevel;
+    showLevelUp(newLevel);
+    return;
+  }
+  state.currentLevel = newLevel;
+  
+  // Update UI
+  document.getElementById('levelDisplay').textContent = state.currentLevel;
+  document.getElementById('questionNum').textContent = (state.currentQuestion + 1) + '/' + QUESTIONS.length;
+  document.getElementById('scoreDisplay').textContent = state.score;
+  document.getElementById('comboDisplay').textContent = 'x' + state.combo;
+  document.getElementById('questionLevel').textContent = 'LEVEL ' + q.level + ' • ' + q.levelName;
+  document.getElementById('questionText').textContent = q.question;
+  document.getElementById('progressFill').style.width = ((state.currentQuestion) / QUESTIONS.length * 100) + '%';
+  
+  // Options
+  const container = document.getElementById('optionsContainer');
+  container.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.innerHTML = '<span class="letter">' + letters[i] + '</span><span>' + opt.substring(3) + '</span>';
+    btn.onclick = () => selectAnswer(i);
+    container.appendChild(btn);
+  });
+  
+  // Hide feedback
+  document.getElementById('feedback').classList.remove('show');
+  document.getElementById('feedback').className = 'feedback';
+  
+  // Start timer
+  state.timeLeft = 20;
+  state.answered = false;
+  state.questionStartTime = Date.now();
+  document.getElementById('timeDisplay').textContent = state.timeLeft;
+  document.getElementById('timerFill').style.width = '100%';
+  
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(updateTimer, 100);
+}
+
+/* ==================== TIMER ==================== */
+function updateTimer() {
+  if (state.answered) return;
+  const elapsed = (Date.now() - state.questionStartTime) / 1000;
+  state.timeLeft = Math.max(0, 20 - elapsed);
+  
+  document.getElementById('timeDisplay').textContent = Math.ceil(state.timeLeft);
+  document.getElementById('timerFill').style.width = (state.timeLeft / 20 * 100) + '%';
+  
+  if (state.timeLeft <= 5 && Math.ceil(state.timeLeft) !== Math.ceil(state.timeLeft + 0.1)) {
+    playSound('tick');
+  }
+  
+  if (state.timeLeft <= 0) {
+    clearInterval(state.timerInterval);
+    timeOut();
+  }
+}
+
+/* ==================== SELECT ANSWER ==================== */
+function selectAnswer(idx) {
+  if (state.answered) return;
+  state.answered = true;
+  clearInterval(state.timerInterval);
+  
+  const qIdx = state.questionsOrder[state.currentQuestion];
+  const q = QUESTIONS[qIdx];
+  const options = document.querySelectorAll('.option');
+  options.forEach(o => o.disabled = true);
+  
+  const isCorrect = idx === q.answer;
+  const feedback = document.getElementById('feedback');
+  const feedbackTitle = document.getElementById('feedbackTitle');
+  const feedbackText = document.getElementById('feedbackText');
+  const feedbackPoints = document.getElementById('feedbackPoints');
+  
+  if (isCorrect) {
+    options[idx].classList.add('correct');
+    playSound('correct');
+    
+    // Calculate points
+    const timeBonus = Math.round((state.timeLeft / 20) * 50);
+    let points = 100 + timeBonus;
+    
+    state.combo++;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+    
+    let comboBonus = 0;
+    if (state.combo >= 3) {
+      comboBonus = 25;
+      points += comboBonus;
+      showComboPopup(state.combo);
+      playSound('combo');
+    }
+    
+    state.score += points;
+    state.correctCount++;
+    
+    feedback.classList.add('correct');
+    feedbackTitle.textContent = '✅ BENAR!';
+    feedbackText.textContent = q.explanation;
+    feedbackPoints.textContent = '+' + points + ' POIN' + (timeBonus > 0 ? ' (+' + timeBonus + ' speed' : '') + (comboBonus > 0 ? (timeBonus > 0 ? ', +' + comboBonus + ' combo)' : ' (+' + comboBonus + ' combo)') : (timeBonus > 0 ? ')' : ''));
+    
+  } else {
+    options[idx].classList.add('wrong');
+    options[q.answer].classList.add('correct');
+    playSound('wrong');
+    
+    state.combo = 0;
+    state.wrongCount++;
+    
+    feedback.classList.add('wrong');
+    feedbackTitle.textContent = '❌ SALAH!';
+    feedbackText.textContent = 'Jawaban benar: ' + q.options[q.answer] + '\n\n' + q.explanation;
+    feedbackPoints.textContent = '+0 POIN';
+  }
+  
+  feedback.classList.add('show');
+  document.getElementById('scoreDisplay').textContent = state.score;
+  document.getElementById('comboDisplay').textContent = 'x' + state.combo;
+  
+  setTimeout(() => {
+    state.currentQuestion++;
+    loadQuestion();
+  }, 3500);
+}
+
+/* ==================== TIMEOUT ==================== */
+function timeOut() {
+  state.answered = true;
+  const qIdx = state.questionsOrder[state.currentQuestion];
+  const q = QUESTIONS[qIdx];
+  const options = document.querySelectorAll('.option');
+  options.forEach(o => o.disabled = true);
+  options[q.answer].classList.add('correct');
+  
+  state.combo = 0;
+  state.wrongCount++;
+  
+  const feedback = document.getElementById('feedback');
+  feedback.classList.add('timeout');
+  document.getElementById('feedbackTitle').textContent = '⏰ WAKTU HABIS!';
+  document.getElementById('feedbackText').textContent = 'Jawaban benar: ' + q.options[q.answer] + '\n\n' + q.explanation;
+  document.getElementById('feedbackPoints').textContent = '+0 POIN';
+  feedback.classList.add('show');
+  
+  document.getElementById('comboDisplay').textContent = 'x' + state.combo;
+  
+  setTimeout(() => {
+    state.currentQuestion++;
+    loadQuestion();
+  }, 3500);
+}
+
+/* ==================== COMBO POPUP ==================== */
+function showComboPopup(n) {
+  const popup = document.getElementById('comboPopup');
+  popup.textContent = '🔥 COMBO x' + n + '! 🔥';
+  popup.classList.remove('show');
+  void popup.offsetWidth;
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 1500);
+}
+
+/* ==================== LEVEL UP ==================== */
+function showLevelUp(level) {
+  playSound('levelup');
+  const titles = {
+    2: 'LEVEL 2 UNLOCKED!',
+    3: 'FINAL LEVEL!'
+  };
+  const descs = {
+    2: '🔧 Network Technician\nKonfigurasi & Subnetting!',
+    3: '⚔️ IP Address Battle\nStudi Kasus & Analisis!'
+  };
+  document.getElementById('levelupTitle').textContent = titles[level] || 'LEVEL UP!';
+  document.getElementById('levelupDesc').textContent = descs[level] || '';
+  document.getElementById('levelupPopup').classList.add('show');
+}
+
+function closeLevelUp() {
+  document.getElementById('levelupPopup').classList.remove('show');
+  loadQuestion();
+}
+
+/* ==================== END GAME ==================== */
+function endGame() {
+  clearInterval(state.timerInterval);
+  
+  const accuracy = Math.round((state.correctCount / QUESTIONS.length) * 100);
+  let rank = 'Network Rookie';
+  let rankColor = 'var(--text-dim)';
+  if (state.score >= 2500) { rank = '🏆 IP ADDRESS MASTER ⭐'; rankColor = 'var(--yellow)'; }
+  else if (state.score >= 1500) { rank = '💜 Network Specialist'; rankColor = 'var(--purple)'; }
+  else if (state.score >= 500) { rank = '💙 Junior Technician'; rankColor = 'var(--cyan)'; }
+  
+  document.getElementById('resultRank').textContent = rank;
+  document.getElementById('resultRank').style.color = rankColor;
+  document.getElementById('resultScore').textContent = state.score;
+  document.getElementById('resultPlayer').textContent = state.playerName + ' • ' + state.playerClass;
+  document.getElementById('resultCorrect').textContent = state.correctCount;
+  document.getElementById('resultWrong').textContent = state.wrongCount;
+  document.getElementById('resultAccuracy').textContent = accuracy + '%';
+  document.getElementById('resultCombo').textContent = state.maxCombo;
+  
+  // Save to leaderboard
+  saveToLeaderboard({
+    name: state.playerName,
+    class: state.playerClass,
+    score: state.score,
+    accuracy: accuracy,
+    date: new Date().toLocaleDateString('id-ID')
+  });
+  
+  showScreen('resultScreen');
+}
+
+/* ==================== LEADERBOARD ==================== */
+function getLeaderboard() {
+  try {
+    return JSON.parse(localStorage.getItem('ipbattle_leaderboard') || '[]');
+  } catch(e) { return []; }
+}
+
+function saveToLeaderboard(entry) {
+  const lb = getLeaderboard();
+  lb.push(entry);
+  lb.sort((a, b) => b.score - a.score);
+  const top10 = lb.slice(0, 10);
+  localStorage.setItem('ipbattle_leaderboard', JSON.stringify(top10));
+}
+
+function renderLeaderboard() {
+  const lb = getLeaderboard();
+  const list = document.getElementById('leaderboardList');
+  if (lb.length === 0) {
+    list.innerHTML = '<p style="text-align: center; color: var(--text-dim); padding: 30px;">Belum ada pemain. Jadilah yang pertama!</p>';
+    return;
+  }
+  list.innerHTML = lb.map((e, i) => {
+    const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+    return '<div class="lb-entry ' + cls + '">' +
+      '<div class="lb-rank">' + medal + '</div>' +
+      '<div class="lb-info"><div class="name">' + escapeHtml(e.name) + '</div><div class="class">' + escapeHtml(e.class) + ' • ' + (e.date || '') + '</div></div>' +
+      '<div class="lb-score">' + e.score + ' pts</div>' +
+      '</div>';
+  }).join('');
+}
+
+function clearLeaderboard() {
+  if (confirm('Hapus semua data papan peringkat?')) {
+    localStorage.removeItem('ipbattle_leaderboard');
+    renderLeaderboard();
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ==================== INIT ==================== */
+document.addEventListener('click', () => {
+  if (!audioCtx) getAudioCtx();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: true });
+</script>
+
+</body>
+</html>
